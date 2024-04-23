@@ -11,4 +11,4 @@
    use JSON.parse() to turn the stringified array back
    into a real JS array.
 
-> Result to complete on my own:
+> Result to complete on my own: `Success 😀💻🎉`
