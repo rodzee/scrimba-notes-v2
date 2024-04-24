@@ -12,7 +12,6 @@ export default function App() {
     () => JSON.parse(localStorage.getItem("notes")) || [],
   );
 
-  const [state, setState] = useState(() => console.log("RUN"));
   const [currentNoteId, setCurrentNoteId] = useState(
     (notes[0] && notes[0].id) || "",
   );
