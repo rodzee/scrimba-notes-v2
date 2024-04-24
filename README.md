@@ -11,4 +11,12 @@
    use JSON.parse() to turn the stringified array back
    into a real JS array.
 
-> Result to complete on my own:
+> Result to complete on my own: `Success 😀💻🎉`
+
+## Second Challenge
+
+1. Lazily initialize our `notes` state so it doesn't
+   reach into localStorage on every single re-render
+   of the App component
+
+> Result to complete on my own: `Success (This was the easy one 😅)`
