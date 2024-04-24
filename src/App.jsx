@@ -6,9 +6,13 @@ import Split from "react-split";
 import { nanoid } from "nanoid";
 
 export default function App() {
+  // The implicit arrow function inside the State is a lazily initialization.
+  // It prevents the State to be called with every single key stroke
   const [notes, setNotes] = useState(
-    JSON.parse(localStorage.getItem("notes")) || [],
+    () => JSON.parse(localStorage.getItem("notes")) || [],
   );
+
+  const [state, setState] = useState(() => console.log("RUN"));
   const [currentNoteId, setCurrentNoteId] = useState(
     (notes[0] && notes[0].id) || "",
   );
