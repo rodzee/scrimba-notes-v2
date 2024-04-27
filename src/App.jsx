@@ -1,49 +1,30 @@
 import { useEffect, useState } from "react";
 import Sidebar from "./components/Sidebar";
 import Editor from "./components/Editor";
-import { data } from "./data";
 import Split from "react-split";
-import { nanoid } from "nanoid";
+import { onSnapshot, addDoc, doc, deleteDoc, setDoc } from "firebase/firestore";
+import { notesCollection, db } from "./firebase";
 
 export default function App() {
-  // The implicit arrow function inside the State is a lazily initialization.
-  // It prevents the State to be called with every single key stroke
-  const [notes, setNotes] = useState(
-    () => JSON.parse(localStorage.getItem("notes")) || [],
-  );
+  const [notes, setNotes] = useState([]);
+  const [currentNoteId, setCurrentNoteId] = useState();
 
-  const [currentNoteId, setCurrentNoteId] = useState(
-    (notes[0] && notes[0].id) || "",
-  );
-
-  function createNewNote() {
+  async function createNewNote() {
     const newNote = {
-      id: nanoid(),
       body: "# Type your markdown note's title here",
     };
-    setNotes((prevNotes) => [newNote, ...prevNotes]);
-    setCurrentNoteId(newNote.id);
+    const newNoteRef = await addDoc(notesCollection, newNote);
+    setCurrentNoteId(newNoteRef.id);
   }
 
-  function updateNote(text) {
-    setNotes((oldNotes) => {
-      const newArray = [];
-      for (let i = 0; i < oldNotes.length; i++) {
-        const oldNote = oldNotes[i];
-        if (oldNote.id === currentNoteId) {
-          newArray.unshift({ ...oldNote, body: text });
-        } else {
-          newArray.push(oldNote);
-        }
-      }
-      return newArray;
-    });
+  async function updateNote(text) {
+    const docRef = doc(db, "notes", currentNoteId);
+    await setDoc(docRef, { body: text }, { merge: true });
   }
 
-  function deleteNote(event, noteId) {
-    event.stopPropagation();
-    const newNotes = notes.filter((note) => note.id !== noteId);
-    setNotes(newNotes);
+  async function deleteNote(noteId) {
+    const docRef = doc(db, "notes", noteId);
+    await deleteDoc(docRef);
   }
 
   function findCurrentNote() {
@@ -55,7 +36,22 @@ export default function App() {
   }
 
   useEffect(() => {
-    localStorage.setItem("notes", JSON.stringify(notes));
+    const unsubscribe = onSnapshot(notesCollection, (snapshot) => {
+      const notesArr = snapshot.docs.map((doc) => ({
+        ...doc.data(),
+        id: doc.id,
+      }));
+      setNotes(notesArr);
+    });
+    return unsubscribe;
+  }, []);
+
+  useEffect(() => {
+    if (!currentNoteId) {
+      // The use of '?' is called optional chaining
+      // setCurrentNoteId(notes[0]?.id) || "",
+      setCurrentNoteId(notes[0] && notes[0].id);
+    }
   }, [notes]);
 
   return (
@@ -69,9 +65,8 @@ export default function App() {
             newNote={createNewNote}
             handleDelete={deleteNote}
           />
-          {currentNoteId && notes.length > 0 && (
-            <Editor currentNote={findCurrentNote()} updateNote={updateNote} />
-          )}
+
+          <Editor currentNote={findCurrentNote()} updateNote={updateNote} />
         </Split>
       ) : (
         <div className="no-notes">
