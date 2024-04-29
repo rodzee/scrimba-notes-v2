@@ -7,13 +7,14 @@ import { notesCollection, db } from "./firebase";
 
 export default function App() {
   const [notes, setNotes] = useState([]);
-  const [currentNoteId, setCurrentNoteId] = useState();
+  const [currentNoteId, setCurrentNoteId] = useState("");
+  const [tempNoteText, setTempNoteText] = useState("");
 
   const sortedNotes = notes.sort((a, b) => b.updatedAt - a.updatedAt);
 
   async function createNewNote() {
     const newNote = {
-      body: "# Type your markdown note's title here",
+      body: currentNoteId,
       createdAt: Date.now(),
       updatedAt: Date.now(),
     };
@@ -35,13 +36,8 @@ export default function App() {
     await deleteDoc(docRef);
   }
 
-  function findCurrentNote() {
-    return (
-      notes.find((note) => {
-        return note.id === currentNoteId;
-      }) || notes[0]
-    );
-  }
+  const currentNote =
+    notes.find((note) => note.id === currentNoteId) || notes[0];
 
   useEffect(() => {
     const unsubscribe = onSnapshot(notesCollection, (snapshot) => {
@@ -62,19 +58,40 @@ export default function App() {
     }
   }, [notes]);
 
+  useEffect(() => {
+    if (currentNote) {
+      setTempNoteText(currentNote.body);
+    }
+  }, [currentNote]);
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (tempNoteText !== currentNote.body) {
+        updateNote(tempNoteText);
+      }
+    }, 1000);
+
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [tempNoteText]);
+
   return (
     <main>
       {notes.length > 0 ? (
         <Split sizes={[30, 70]} direction="horizontal" className="split">
           <Sidebar
             notes={sortedNotes}
-            currentNote={findCurrentNote()}
+            currentNote={currentNote}
             setCurrentNoteId={setCurrentNoteId}
             newNote={createNewNote}
             handleDelete={deleteNote}
           />
 
-          <Editor currentNote={findCurrentNote()} updateNote={updateNote} />
+          <Editor
+            tempNoteText={tempNoteText}
+            setTempNoteText={setTempNoteText}
+          />
         </Split>
       ) : (
         <div className="no-notes">
